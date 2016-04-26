@@ -1,10 +1,14 @@
 #! /bin/bash
 
+function print_data() {
+   echo $1 $2 $3 | column -t -s "      "
+}
+
 function monitor_request() {
     #regex to see if number.number.number.number
-    if [[ $0 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
+    if [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
     then
-        command="ping"
+        command="ping -c 4"
         status_good="online"
         status_bad="offline"
     else
@@ -12,12 +16,12 @@ function monitor_request() {
         status_good="available"
         status_bad="unavailable"
     fi
-    eval $command $0 &> /dev/null
+    eval $command $1 &> /dev/null
     if [ "$?" = "0" ]
     then
-        print_data $0 $command $status_good
+        print_data $1 $(echo $command | awk '{ print $1}') $status_good
     else
-        print_data $0 $command $status_bad
+        print_data $1 $(echo $command | awk '{ print $1}') $status_bad
     fi
 };
 
@@ -26,13 +30,17 @@ then
     echo At least one url/ip needed >&2
     exit 3
 else
-    if [ "$0" = "-" ]
+    args=$*
+    if [ "$1" = "-" ]
     then
         #read from the input
-        echo read from input
+        args=""
+        while read line; do
+            args="$args $line"
+        done < /dev/stdin
     fi
-    for address in $*
+    for address in $args
     do
-        monitor_request address
+        monitor_request $address
     done
 fi
